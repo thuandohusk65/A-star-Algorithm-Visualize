@@ -38,12 +38,13 @@ class MainActivity : ComponentActivity() {
             var countUpdate by remember { mutableStateOf(0) }
             val graph = Graph()
             graph.addNode(Node(caculateWight(0.0), caculateHeight(0.0)))
+            graph.addNode(Node(caculateWight(5.0), caculateHeight(4.9)))
             graph.addNode(Node(caculateWight(3.0), caculateHeight(-1.73)))
             graph.addNode(Node(caculateWight(4.0), caculateHeight(0.0)))
 
-            graph.addEdge(0, 1, 5.0)
-            graph.addEdge(1, 2, 4.0)
-            graph.addEdge(0, 2, 12.0)
+            graph.addEdge(0, 1, 2.0)
+            graph.addEdge(0, 2, 5.0)
+            graph.addEdge(2, 3, 4.0)
 
             LaunchedEffect(key1 = true) {
                 val copy = hashMapOf<Int, Node>()
@@ -65,7 +66,7 @@ class MainActivity : ComponentActivity() {
                             widthScreen = screenWidth.toFloat()
                         )
                         if (isRunning) {
-                            graph.aStar(startNodeId = 0, targetNodeId = 2)
+                            graph.aStar(startNodeId = 0, targetNodeId = 3, speed = 4)
                         }
                         Row(
                             modifier = Modifier
@@ -77,17 +78,20 @@ class MainActivity : ComponentActivity() {
                             var start by remember { mutableStateOf("") }
                             var end by remember { mutableStateOf("") }
                             var distance by remember { mutableStateOf("") }
-                            Button(onClick = {
-                                val node = Node(
-                                    caculateWight(x.toDouble()),
-                                    caculateHeight(y.toDouble())
-                                )
-                                isRunning = false
-                                graph.addNode(node)
-                                val copy = hashMapOf<Int, Node>()
-                                copy.putAll(graph.nodes)
-                                hashNode = copy
-                            }) {
+                            Button(
+                                modifier = Modifier.padding(start = 10.dp),
+                                onClick = {
+                                    val node = Node(
+                                        caculateWight(x.toDouble()),
+                                        caculateHeight(y.toDouble())
+                                    )
+                                    isRunning = false
+                                    graph.addNode(node)
+                                    val copy = hashMapOf<Int, Node>()
+                                    copy.putAll(graph.nodes)
+                                    hashNode = copy
+                                }) {
+                                Text("add Node")
                             }
 
                             TextField(
@@ -168,95 +172,6 @@ class MainActivity : ComponentActivity() {
     private fun caculateHeight(y: Double) = screenWidth / 2 - y * (screenWidth / 20)
 }
 
-@Composable
-fun TurnOnNode(node: Node, delay: Int = 300) {
-    var colorState by remember {
-        mutableStateOf(
-//            Color(
-//                node.color.red.toFloat() + 50f,
-//                node.color.green.toFloat() + 50f,
-//                node.color.blue.toFloat() + 50f,
-//                1f
-//            )
-        Color.Transparent
-        )
-    }
-
-    var color = animateColorAsState(
-        targetValue = colorState,
-        animationSpec = tween(
-            durationMillis = if(colorState == Color.Yellow) 0 else 1500
-        )
-    )
-
-    LaunchedEffect(key1 = true) {
-        delay(delay.toLong())
-        colorState = Color.Yellow
-        colorState = Color.Transparent
-    }
-
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        drawCircle(
-            color = color.value,
-            center = Offset(node.x.toFloat(), node.y.toFloat()),
-            radius = 55f
-        )
-    }
-}
-
-@Composable
-fun EdgeAnimation(start: Node, end: Node, delay: Int = 300) {
-    var animationPlayed by remember { mutableStateOf(false) }
-    val x = animateFloatAsState(
-        targetValue = if (animationPlayed) (end.x - start.x).toFloat() else 0f,
-        animationSpec = tween(
-            durationMillis = 3000,
-            delayMillis = delay
-        )
-    )
-    val y = animateFloatAsState(
-        targetValue = if (animationPlayed) (end.y - start.y).toFloat() else 0f,
-        animationSpec = tween(
-            durationMillis = 3000,
-            delayMillis = delay
-        )
-    )
-
-    LaunchedEffect(key1 = true) {
-        animationPlayed = true
-    }
-    Canvas(modifier = Modifier.fillMaxSize()) {
-
-        drawLine(
-            color = Color.Yellow,
-            start = Offset(start.x.toFloat(), start.y.toFloat()),
-            end = Offset(start.x.toFloat() + x.value, start.y.toFloat() + y.value),
-            strokeWidth = 1.dp.toPx()
-        )
-    }
-}
-
-@Composable
-fun GraphSection(hashNode: HashMap<Int, Node>, count: Int) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        for ((_, node) in hashNode) {
-            drawCircle(
-                color = Color(node.color),
-                center = Offset(node.x.toFloat(), node.y.toFloat()),
-                radius = 50f
-            )
-
-            for ((neighbor, _) in node.neighbors) {
-                drawLine(
-                    color = Color.Black,
-                    start = Offset(node.x.toFloat(), node.y.toFloat()),
-                    end = Offset(neighbor.x.toFloat(), neighbor.y.toFloat()),
-                    strokeWidth = 1.dp.toPx()
-                )
-
-            }
-        }
-
 //        for (edge in listEdge) {
 //            drawLine(
 //                color = Color.Black,
@@ -271,9 +186,6 @@ fun GraphSection(hashNode: HashMap<Int, Node>, count: Int) {
 //                strokeWidth = 1.dp.toPx()
 //            )
 //        }
-    }
-
-}
 
 @Composable
 fun ShowCoordinateAxis(
