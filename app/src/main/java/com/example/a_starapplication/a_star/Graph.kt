@@ -61,7 +61,7 @@ class Graph {
     }
 
     @Composable
-    fun aStar(startNodeId: Int, targetNodeId: Int, speed: Int) {
+    fun aStar(startNodeId: Int, targetNodeId: Int, speed: Double) {
         close.clear()
         open.clear()
         for ((_, node) in nodes) {
@@ -83,10 +83,10 @@ class Graph {
             CloseAndOpenQueueSection(
                 open = tempOpen,
                 close = PriorityQueue(),
-                countDelay + 500 * speed,
-                1000 * speed
+                (countDelay + 500 * speed).toInt(),
+                (1000 * speed).toInt()
             )
-            countDelay += 1000 * speed
+            countDelay += (1000 * speed).toInt()
             while (!open.isEmpty()) {
                 currentNode = open.peek()
                 if (currentNode != startNode) {
@@ -102,15 +102,15 @@ class Graph {
                     CloseAndOpenQueueSection(
                         open = copyOpen,
                         close = copyClose,
-                        countDelay + 500 * speed,
-                        3300 * speed
+                        (countDelay + 500 * speed).toInt(),
+                        (3300 * speed).toInt()
                     )
-                    countDelay += 3300 * speed
+                    countDelay += (3300 * speed).toInt()
                 }
 //                TurnOnNode(node = currentNode, delay = countDelay)
 //                countDelay+=1500
                 if (currentNode == targetNode) {
-                    CloseAndOpenQueueSection(open = open, close = close, countDelay + 500 * speed)
+                    CloseAndOpenQueueSection(open = open, close = close, (countDelay + 500 * speed).toInt())
                     break
                 }
                 for ((neighbor, distance) in currentNode!!.neighbors) {
@@ -139,10 +139,10 @@ class Graph {
                     CloseAndOpenQueueSection(
                         open = copyOpen2,
                         close = copyClose2,
-                        delay = countDelay + 500 * speed,
-                        visibleTime = 1500 * speed
+                        delay = (countDelay + 500 * speed).toInt(),
+                        visibleTime = (1500 * speed).toInt()
                     )
-                    countDelay += 1500 * speed
+                    countDelay += (1500 * speed).toInt()
                 }
                 open.remove(currentNode)
                 close.add(currentNode)

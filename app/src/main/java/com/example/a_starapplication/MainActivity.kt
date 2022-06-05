@@ -4,18 +4,25 @@ import android.graphics.Paint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,6 +30,7 @@ import com.example.a_starapplication.a_star.*
 
 import com.example.a_starapplication.ui.theme.AstarApplicationTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -33,10 +41,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             screenHeight = Constant.HEIGHT_SCREEN
             screenWidth = Constant.WIDTH_SCREEN
+            var startId = -1
+            var targetId = -1
+            var speed by remember { mutableStateOf(1.0) }
             var hashNode by remember { mutableStateOf(HashMap<Int, Node>()) }
             var isRunning by remember { mutableStateOf(false) }
             var countUpdate by remember { mutableStateOf(0) }
-            val graph = Graph()
+            var graph = Graph()
             graph.addNode(Node(caculateWight(0.0), caculateHeight(0.0)))
             graph.addNode(Node(caculateWight(5.0), caculateHeight(4.9)))
             graph.addNode(Node(caculateWight(3.0), caculateHeight(-1.73)))
@@ -53,22 +64,40 @@ class MainActivity : ComponentActivity() {
             }
             AstarApplicationTheme {
                 // A surface container using the 'background' color from the theme
+                val scope = rememberCoroutineScope()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-
-
                     Box(modifier = Modifier.fillMaxSize()) {
                         GraphSection(hashNode, countUpdate)
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(10.dp)
+                                .size(24.dp)
+                                .clickable {
+                                    graph = Graph()
+                                    val copy = hashMapOf<Int, Node>()
+                                    copy.putAll(graph.nodes)
+                                    hashNode = copy
+                                }
+                        )
                         ShowCoordinateAxis(
                             heightScreen = screenHeight.toFloat(),
                             widthScreen = screenWidth.toFloat()
                         )
                         if (isRunning) {
-                            graph.aStar(startNodeId = 0, targetNodeId = 3, speed = 4)
+                            graph.aStar(
+                                startNodeId = startId,
+                                targetNodeId = targetId,
+                                speed = 1 / speed
+                            )
                         }
                         Row(
+                            verticalAlignment = Alignment.Bottom,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomStart)
@@ -78,6 +107,8 @@ class MainActivity : ComponentActivity() {
                             var start by remember { mutableStateOf("") }
                             var end by remember { mutableStateOf("") }
                             var distance by remember { mutableStateOf("") }
+                            var startNameRe by remember { mutableStateOf("") }
+                            var targetNameRe by remember { mutableStateOf("") }
                             Button(
                                 modifier = Modifier.padding(start = 10.dp),
                                 onClick = {
@@ -115,8 +146,8 @@ class MainActivity : ComponentActivity() {
 
                             Button(onClick = {
                                 graph.addEdge(
-                                    start.toInt(),
-                                    end.toInt(),
+                                    nameToId(start.trim().uppercase()),
+                                    nameToId(end.trim().uppercase()),
                                     distance = distance.toDouble()
                                 )
 //                                listEdge = listOf()
@@ -134,7 +165,7 @@ class MainActivity : ComponentActivity() {
                                 value = start, onValueChange = {
                                     start = it
                                 },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                                 modifier = Modifier
                                     .padding(horizontal = 10.dp)
                                     .width(50.dp)
@@ -144,7 +175,7 @@ class MainActivity : ComponentActivity() {
                                 onValueChange = {
                                     end = it
                                 },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                                 modifier = Modifier.width(50.dp)
                             )
                             TextField(
@@ -158,8 +189,74 @@ class MainActivity : ComponentActivity() {
                                     .width(50.dp)
                             )
 
-                            Button(onClick = { isRunning = true }) {
+                            Button(onClick = {
+                                if (isRunning == true) {
+                                    isRunning = false
+                                    scope.launch {
+                                        delay(100)
+                                        isRunning = true
+                                    }
+                                } else {
+                                    isRunning = true
+                                }
+                            }) {
                                 Text(text = "Run")
+                            }
+
+                            TextField(
+                                value = startNameRe, onValueChange = {
+                                    startNameRe = it
+                                    startId = nameToId(it.trim().uppercase())
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                                modifier = Modifier
+                                    .padding(horizontal = 10.dp)
+                                    .width(50.dp)
+                            )
+                            TextField(
+                                value = targetNameRe,
+                                onValueChange = {
+                                    targetNameRe = it
+                                    targetId = nameToId(it.trim().uppercase())
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                                modifier = Modifier.width(50.dp)
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Column(modifier = Modifier.padding(end = 10.dp)) {
+                                Image(
+                                    Icons.Default.KeyboardArrowUp, contentDescription = null,
+                                    modifier = Modifier
+                                        .padding(bottom = 4.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            if (speed < 2) {
+                                                speed += 0.25
+                                            } else if (speed >= 2 && speed <= 4) {
+                                                speed += 1
+                                            }
+                                        }
+                                        .background(Color.LightGray)
+                                        .size(30.dp)
+                                )
+                                Text(text = "${speed}", modifier = Modifier.padding(bottom = 4.dp))
+                                Image(
+                                    Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.LightGray)
+                                        .clickable {
+                                            if (speed > 2) {
+                                                speed -= 1
+                                            } else if (speed <= 2 && speed >= 0.5) {
+                                                speed -= 0.25
+                                            }
+                                        }
+                                        .size(30.dp)
+                                )
                             }
                         }
                     }
@@ -170,6 +267,19 @@ class MainActivity : ComponentActivity() {
 
     private fun caculateWight(x: Double) = screenHeight / 2 + x * (screenHeight / 30)
     private fun caculateHeight(y: Double) = screenWidth / 2 - y * (screenWidth / 20)
+
+    private fun nameToId(columnTitle: String): Int {
+        var point = 0
+        var id = 0
+        while (point < columnTitle.length) {
+            val lastCharacter = columnTitle.substring(point, point + 1).first()
+            val charId = lastCharacter.toInt()
+            val charToColumn = if (charId == 90) 26 else charId - 64
+            id += charToColumn * Math.pow(26.0, (columnTitle.length - point - 1).toDouble()).toInt()
+            point++
+        }
+        return id - 1
+    }
 }
 
 //        for (edge in listEdge) {
