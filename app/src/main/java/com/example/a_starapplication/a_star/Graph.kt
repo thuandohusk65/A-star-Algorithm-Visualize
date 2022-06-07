@@ -1,6 +1,7 @@
 package com.example.a_starapplication.a_star
 
 import android.graphics.Paint
+import android.graphics.Typeface
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -278,6 +279,19 @@ fun GraphSection(hashNode: HashMap<Int, Node>, count: Int) {
                     strokeWidth = 1.dp.toPx()
                 )
 
+                drawContext.canvas.nativeCanvas.apply {
+                    drawText(
+                         "${node.neighbors[neighbor]}",
+                        ((node.x + neighbor.x)/2).toFloat(),
+                        ((node.y + neighbor.y)/2).toFloat() + 30f,
+                        Paint().apply {
+                            textSize = 14.dp.toPx()
+                            typeface = Typeface.DEFAULT_BOLD
+                            color = Color.Red.toArgb()
+                            textAlign = Paint.Align.CENTER
+                        }
+                    )
+                }
             }
         }
     }
